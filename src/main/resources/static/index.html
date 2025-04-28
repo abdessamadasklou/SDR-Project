@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Surveillance</title>
+    <style>
+        .alerte {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Surveillance Entrepôt</h1>
+
+    <h2>Données en temps réel</h2>
+    <div id="donnees"></div>
+
+    <h2>Alertes</h2>
+    <div id="alertes"></div>
+
+    <script>
+        async function chargerdonnee() {
+        const eventSource = new EventSource('/api/donnees/stream');
+
+        eventSource.onmessage = function(event) {
+            try {
+                const donnees = JSON.parse(event.data);
+                document.getElementById('donnees').innerHTML = donnees.map(d =>
+                    `<p>Capteur ${d.capteurId || 'N/A'}: ${d.temperature}°C, ${d.humidite}%</p>`
+                ).join("");
+            } catch (e) {
+                console.error('Erreur lors du traitement des données SSE:', e);
+            }
+        };
+
+        eventSource.onerror = function(err) {
+            console.error('Erreur de connexion SSE:', err);
+            eventSource.close();
+        };
+    }
+
+        async function chargerAlertes() {
+            try {
+                const resAlertes = await fetch('/api/alertes');
+                if (!resAlertes.ok) {
+                    console.error('Erreur API /api/alertes :', await resAlertes.text());
+                    document.getElementById('alertes').innerHTML = '<p>Erreur lors du chargement des alertes.</p>';
+                    return;
+                }
+                const alertes = await resAlertes.json();
+                if (!Array.isArray(alertes)) {
+                    console.error('Alertes reçues ne sont pas un tableau:', alertes);
+                    document.getElementById('alertes').innerHTML = '<p>Alertes invalides reçues.</p>';
+                    return;
+                }
+                document.getElementById('alertes').innerHTML = alertes.map(a =>
+                    `<p class="alerte">⚠️ Capteur ${a.capteurId || 'N/A'}: ${a.temperature}°C</p>`
+                ).join("");
+            } catch (error) {
+                console.error('Erreur lors du chargement des alertes:', error);
+                document.getElementById('alertes').innerHTML = '<p>Erreur lors du chargement des alertes.</p>';
+            }
+        }
+
+        setInterval(chargerAlertes, 2000);
+        chargerAlertes();
+        setInterval(chargerdonnee, 2000);
+        chargerdonnee();
+    </script>
+</body>
+
+</html>
