@@ -1,0 +1,21 @@
+Instructions to fix warnings and exceptions when running your Spring Boot app with Java 24:
+
+1. Remove duplicate dependency in pom.xml:
+   - The duplicate <dependency> for 'spring-boot-starter-web' has been removed.
+
+2. Suppress Java 24 native access warnings:
+   - Add the following JVM option when running your app:
+     --enable-native-access=ALL-UNNAMED
+   - Example:
+     mvn spring-boot:run -Dspring-boot.run.jvmArguments="--enable-native-access=ALL-UNNAMED"
+
+3. Handle Spring Boot DevTools SilentExitException:
+   - This exception is part of DevTools restart mechanism and usually harmless.
+   - If it causes issues, disable restart by adding to src/main/resources/application.properties:
+     spring.devtools.restart.enabled=false
+   - Or remove the devtools dependency from pom.xml if you do not need it.
+
+4. Fix duplicate dependency warning:
+   - The duplicate 'spring-boot-starter-web' dependency was removed from pom.xml.
+
+Follow these steps to improve stability and suppress warnings.

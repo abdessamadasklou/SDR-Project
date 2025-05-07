@@ -1,23 +1,29 @@
 package temperature.demo.service;
 
-import java.util.Arrays;
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.List;
-
-import org.springframework.stereotype.Service;
-
 import temperature.demo.model.Mesure;
+import temperature.demo.remote.TemperatureService;
 
-@Service
-public class RmiServiceClient {
-
-    public List<Mesure> getDernieresMesures() {
-        return Arrays.asList(
-            new Mesure(33.5, 55.0),
-            new Mesure(31.2, 45.0)
-        );
+public class RmiServiceClient extends UnicastRemoteObject implements TemperatureService {
+    private List<Mesure> receivedMesures = new ArrayList<>();
+    public RmiServiceClient() throws RemoteException {
+        super();
     }
 
-    public List<Mesure> getAlertes() {
+    @Override
+public void envoyerMesure(Mesure m) throws RemoteException {
+    receivedMesures.add(m);
+    // this.getDernieresMesures() ;
+    System.out.println("Nouvelle mesure reçue : " + m.getTemperature() + "°C / " + m.getHumidite() + "%");
+}
+    public List<Mesure> getDernieresMesures() throws RemoteException {
+        return new ArrayList<>(receivedMesures);
+    }
+
+    public List<Mesure> getAlertes() throws RemoteException {
         return getDernieresMesures().stream()
             .filter(m -> m.getTemperature() < 10 || m.getTemperature() > 30)
             .toList();

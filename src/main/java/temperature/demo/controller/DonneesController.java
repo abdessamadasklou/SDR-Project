@@ -12,8 +12,12 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.rmi.RemoteException;
+
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 @RestController
+@CrossOrigin("*")
 @RequestMapping("/api")
 public class DonneesController {
 
@@ -23,7 +27,7 @@ public class DonneesController {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @GetMapping("/donnees")
-    public List<Map<String, Object>> getDonnees() {
+    public List<Map<String, Object>> getDonnees() throws RemoteException {
         List<Mesure> mesures = rmiServiceClient.getDernieresMesures();
         List<Map<String, Object>> donnees = new ArrayList<>();
 
@@ -41,7 +45,7 @@ public class DonneesController {
     }
 
     @GetMapping("/alertes")
-    public List<Map<String, Object>> getAlertes() {
+    public List<Map<String, Object>> getAlertes() throws RemoteException {
         List<Mesure> alertesMesures = rmiServiceClient.getAlertes();
         List<Map<String, Object>> alertes = new ArrayList<>();
 
@@ -58,10 +62,10 @@ public class DonneesController {
     }
 
     @GetMapping("/donnees/stream")
-    public SseEmitter streamDonnees() {
+    public SseEmitter streamDonnees() throws RemoteException {
         SseEmitter emitter = new SseEmitter();
 
-        scheduler.scheduleAtFixedRate(() -> {
+        final var future = scheduler.scheduleAtFixedRate(() -> {
             try {
                 List<Mesure> mesures = rmiServiceClient.getDernieresMesures();
                 List<Map<String, Object>> donnees = new ArrayList<>();
@@ -78,6 +82,12 @@ public class DonneesController {
                 emitter.completeWithError(e);
             }
         }, 0, 5, TimeUnit.SECONDS);
+
+        emitter.onCompletion(() -> future.cancel(true));
+        emitter.onTimeout(() -> {
+            future.cancel(true);
+            emitter.complete();
+        });
 
         return emitter;
     }

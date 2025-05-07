@@ -3,9 +3,9 @@
 
 package temperature.demo.model;
 
+import java.io.Serializable;
 
-
-public class Mesure {
+public class Mesure implements Serializable {
     public double temperature;
     public double humidite;
 

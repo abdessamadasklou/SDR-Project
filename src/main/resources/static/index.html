@@ -65,9 +65,11 @@
         }
 
         setInterval(chargerAlertes, 2000);
-        chargerAlertes();
         setInterval(chargerdonnee, 2000);
         chargerdonnee();
+        chargerAlertes();
+        // Remove repeated EventSource creation by calling chargerdonnee only once
+        
     </script>
 </body>
 
