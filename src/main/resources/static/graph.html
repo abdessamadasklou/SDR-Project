@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Graphiques Température et Humidité</title>
+
+    <!-- 1. Luxon (must come before the adapter) -->
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+
+    <!-- 2. Chart.js (must come before the adapter) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- 3. Chart.js Luxon adapter -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.js"></script>
+</head>
+
+
+<body>
+    <h1>Graphiques Température et Humidité</h1>
+    <label for="captureSelect">Sélectionnez un capture:</label>
+    <select id="captureSelect">
+        <option value="">--Choisir un capture--</option>
+    </select>
+
+    <canvas id="tempChart" width="600" height="300"></canvas>
+    <canvas id="humidChart" width="600" height="300"></canvas>
+
+    <script>
+        const captureSelect = document.getElementById('captureSelect');
+        const tempCtx = document.getElementById('tempChart').getContext('2d');
+        const humidCtx = document.getElementById('humidChart').getContext('2d');
+
+        let tempChart = new Chart(tempCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Température (°C)',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    fill: false,
+                }]
+            },
+            options: {
+                scales: {
+                    x: { type: 'time', time: { unit: 'minute' } },
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        let humidChart = new Chart(humidCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Humidité (%)',
+                    data: [],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    fill: false,
+                }]
+            },
+            options: {
+                scales: {
+                    x: { type: 'time', time: { unit: 'minute' } },
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        async function fetchCaptures() {
+            const res = await fetch('/api/captures');
+            const captures = await res.json();
+            console.log('Captures fetched:', captures);
+            captures.forEach(capture => {
+                const option = document.createElement('option');
+                option.value = capture;
+                option.textContent = capture;
+                captureSelect.appendChild(option);
+            });
+        }
+
+        async function fetchDataAndUpdateCharts(captureName) {
+            if (!captureName) {
+                tempChart.data.labels = [];
+                tempChart.data.datasets[0].data = [];
+                tempChart.update();
+
+                humidChart.data.labels = [];
+                humidChart.data.datasets[0].data = [];
+                humidChart.update();
+                return;
+            }
+            const res = await fetch(`/api/mesures/${encodeURIComponent(captureName)}`);
+            const mesures = await res.json();
+            console.log(`Mesures fetched for capture ${captureName}:`, mesures);
+
+            const labels = mesures.map(m => {
+                const [y, mo, d, h, mi, s] = m.insertionTime;
+                return new Date(y, mo - 1, d, h, mi, s);
+            });
+            const tempData = mesures.map(m => m.temperature);
+            const humidData = mesures.map(m => m.humidite);
+
+            tempChart.data.labels = labels;
+            tempChart.data.datasets[0].data = tempData;
+            tempChart.update();
+
+            humidChart.data.labels = labels;
+            humidChart.data.datasets[0].data = humidData;
+            humidChart.update();
+        }
+
+        captureSelect.addEventListener('change', () => {
+            fetchDataAndUpdateCharts(captureSelect.value);
+        });
+
+        fetchCaptures();
+    </script>
+</body>
+
+</html>

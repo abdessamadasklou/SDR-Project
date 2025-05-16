@@ -1,21 +1,12 @@
-Instructions to fix warnings and exceptions when running your Spring Boot app with Java 24:
+To fix the missing RmiServiceExporter class error, please manually add the following dependency to your pom.xml inside the <dependencies> section:
 
-1. Remove duplicate dependency in pom.xml:
-   - The duplicate <dependency> for 'spring-boot-starter-web' has been removed.
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-context-support</artifactId>
+</dependency>
 
-2. Suppress Java 24 native access warnings:
-   - Add the following JVM option when running your app:
-     --enable-native-access=ALL-UNNAMED
-   - Example:
-     mvn spring-boot:run -Dspring-boot.run.jvmArguments="--enable-native-access=ALL-UNNAMED"
+After adding this, run the following command in your project directory to update dependencies and rebuild:
 
-3. Handle Spring Boot DevTools SilentExitException:
-   - This exception is part of DevTools restart mechanism and usually harmless.
-   - If it causes issues, disable restart by adding to src/main/resources/application.properties:
-     spring.devtools.restart.enabled=false
-   - Or remove the devtools dependency from pom.xml if you do not need it.
+mvn clean install
 
-4. Fix duplicate dependency warning:
-   - The duplicate 'spring-boot-starter-web' dependency was removed from pom.xml.
-
-Follow these steps to improve stability and suppress warnings.
+This will allow the RmiServerConfig.java to compile successfully and enable proper RMI service exporting.

@@ -24,6 +24,9 @@ public class DonneesController {
     @Autowired
     private RmiServiceClient rmiServiceClient;
 
+    @Autowired
+    private temperature.demo.repository.MesureRepository mesureRepository;
+
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @GetMapping("/donnees")
@@ -35,9 +38,10 @@ public class DonneesController {
             Mesure m = mesures.get(i);
             Map<String, Object> map = new HashMap<>();
             map.put("capteurId", i + 1);
+            map.put("capteurName", m.getCapteurName());
             map.put("temperature", m.getTemperature());
             map.put("humidite", m.getHumidite());
-            // No timestamp available in Mesure, so omit or add null
+            map.put("insertionTime", m.getInsertionTime() != null ? m.getInsertionTime().toString() : null);
             donnees.add(map);
         });
 
@@ -53,8 +57,10 @@ public class DonneesController {
             Mesure m = alertesMesures.get(i);
             Map<String, Object> map = new HashMap<>();
             map.put("capteurId", i + 1);
+            map.put("capteurName", m.getCapteurName());
             map.put("temperature", m.getTemperature());
             map.put("humidite", m.getHumidite());
+            map.put("insertionTime", m.getInsertionTime() != null ? m.getInsertionTime().toString() : null);
             alertes.add(map);
         });
 
@@ -73,8 +79,10 @@ public class DonneesController {
                     Mesure m = mesures.get(i);
                     Map<String, Object> map = new HashMap<>();
                     map.put("capteurId", i + 1);
+                    map.put("capteurName", m.getCapteurName());
                     map.put("temperature", m.getTemperature());
                     map.put("humidite", m.getHumidite());
+                    map.put("insertionTime", m.getInsertionTime() != null ? m.getInsertionTime().toString() : null);
                     donnees.add(map);
                 });
                 emitter.send(donnees);
@@ -90,5 +98,15 @@ public class DonneesController {
         });
 
         return emitter;
+    }
+
+    @GetMapping("/captures")
+    public List<String> getDistinctCaptures() {
+        return mesureRepository.findDistinctCapteurNames();
+    }
+
+    @GetMapping("/mesures/{captureName}")
+    public List<Mesure> getMesuresByCapture(@PathVariable String captureName) {
+        return mesureRepository.findByCapteurNameOrderByInsertionTimeAsc(captureName);
     }
 }

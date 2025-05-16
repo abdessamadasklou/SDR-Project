@@ -1,0 +1,52 @@
+Class Diagram Design for temperature.demo project:
+
+1. Class: Mesure
+   - Attributes:
+     - double temperature
+     - double humidite
+   - Methods:
+     - getTemperature(): double
+     - setTemperature(double)
+     - getHumidite(): double
+     - setHumidite(double)
+
+2. Interface: TemperatureService (extends Remote)
+   - Methods:
+     - List<Mesure> getDernieresMesures() throws RemoteException
+     - List<Mesure> getAlertes() throws RemoteException
+     - void envoyerMesure(Mesure m) throws RemoteException
+
+3. Class: RmiServiceClient (extends UnicastRemoteObject, implements TemperatureService)
+   - Attributes:
+     - List<Mesure> receivedMesures
+   - Methods:
+     - envoyerMesure(Mesure m)
+     - getDernieresMesures()
+     - getAlertes()
+
+4. Class: capteur (Client)
+   - Methods:
+     - main(String[] args)
+   - Uses TemperatureService to send Mesure objects
+
+5. Class: tempServer
+   - Methods:
+     - main(String[] args)
+   - Creates and binds RmiServiceClient instance to RMI registry
+
+6. Class: DonneesController (Spring REST Controller)
+   - Attributes:
+     - RmiServiceClient rmiServiceClient (Autowired)
+   - Methods:
+     - getDonnees(): List<Map<String,Object>>
+     - getAlertes(): List<Map<String,Object>>
+     - streamDonnees(): SseEmitter
+
+Relationships:
+- RmiServiceClient implements TemperatureService
+- capteur uses TemperatureService (client)
+- tempServer creates and binds RmiServiceClient
+- DonneesController depends on RmiServiceClient
+- Mesure is used by TemperatureService, RmiServiceClient, capteur, and DonneesController
+
+This design captures the main classes and their interactions in the system.
