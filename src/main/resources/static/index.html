@@ -15,7 +15,8 @@
     <h1>Surveillance Entrepôt</h1>
 
     <nav>
-        <a href="graph.html">Voir Graphiques Température et Humidité</a>
+        <a href="graph.html">Voir Graphiques Température et Humidité</a> |
+        <a href="download.html">Télécharger les données</a>
     </nav>
 
     <h2>Données en temps réel</h2>
@@ -26,24 +27,24 @@
 
     <script>
         async function chargerdonnee() {
-        const eventSource = new EventSource('/api/donnees/stream');
+            const eventSource = new EventSource('/api/donnees/stream');
 
-        eventSource.onmessage = function(event) {
-            try {
-                const donnees = JSON.parse(event.data);
-                document.getElementById('donnees').innerHTML = donnees.map(d =>
-                    `<p>Capteur ${d.capteurId || 'N/A'}: ${d.temperature}°C, ${d.humidite}%</p>`
-                ).join("");
-            } catch (e) {
-                console.error('Erreur lors du traitement des données SSE:', e);
-            }
-        };
+            eventSource.onmessage = function(event) {
+                try {
+                    const donnees = JSON.parse(event.data);
+                    document.getElementById('donnees').innerHTML = donnees.map(d =>
+                        `<p>Capteur ${d.capteurId || 'N/A'}: ${d.temperature}°C, ${d.humidite}%</p>`
+                    ).join("");
+                } catch (e) {
+                    console.error('Erreur lors du traitement des données SSE:', e);
+                }
+            };
 
-        eventSource.onerror = function(err) {
-            console.error('Erreur de connexion SSE:', err);
-            eventSource.close();
-        };
-    }
+            eventSource.onerror = function(err) {
+                console.error('Erreur de connexion SSE:', err);
+                eventSource.close();
+            };
+        }
 
         async function chargerAlertes() {
             try {
@@ -73,7 +74,7 @@
         chargerdonnee();
         chargerAlertes();
         // Remove repeated EventSource creation by calling chargerdonnee only once
-        
+
     </script>
 </body>
 

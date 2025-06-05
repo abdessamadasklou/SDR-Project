@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Data Export</title>
+</head>
+<body>
+    <h1>Download Data</h1>
+    <label for="formatSelect">Select format:</label>
+    <select id="formatSelect">
+        <option value="csv">CSV</option>
+        <option value="excel">Excel</option>
+    </select>
+    <button id="downloadBtn">Download</button>
+
+    <script>
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const format = document.getElementById('formatSelect').value;
+            const url = `/api/export?format=${format}`;
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = format === 'csv' ? 'mesures.csv' : 'mesures.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+            })
+            .catch(error => {
+                alert('Error downloading file: ' + error.message);
+            });
+        });
+    </script>
+</body>
+</html>
