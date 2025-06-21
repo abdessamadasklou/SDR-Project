@@ -1,40 +1,501 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="fr">
 <head>
-    <title>Surveillance</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surveillance Entrepôt - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.js"></script>
     <style>
-        .alerte {
-            color: red;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            background: transparent;
+            color: white;
+            font-size: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab-button.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-button:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sensor-data {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sensor-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9ff, #e8f0ff);
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .sensor-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .sensor-values {
+            display: flex;
+            gap: 20px;
+        }
+
+        .value {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .value-number {
+            font-size: 1.4rem;
             font-weight: bold;
+            color: #667eea;
+        }
+
+        .value-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: linear-gradient(135deg, #fff5f5, #ffe8e8);
+            border-radius: 12px;
+            border-left: 4px solid #ff4757;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .alert-icon {
+            font-size: 1.5rem;
+            color: #ff4757;
+        }
+
+        .alert-text {
+            color: #d63031;
+            font-weight: 600;
+        }
+
+        .charts-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .chart-controls h3 {
+            font-size: 1.5rem;
+            color: #333;
+            margin: 0;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        select {
+            padding: 12px 40px 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            font-size: 1rem;
+            cursor: pointer;
+            min-width: 200px;
+            appearance: none;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #666;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .export-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .export-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .export-card h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            min-width: 150px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+            margin-right: 8px;
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .no-data {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid,
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .chart-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>Surveillance Entrepôt</h1>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 Surveillance Entrepôt</h1>
+            <p class="subtitle">Monitoring en temps réel de température et humidité</p>
+        </div>
 
-    <nav>
-        <a href="graph.html">Voir Graphiques Température et Humidité</a> |
-        <a href="download.html">Télécharger les données</a>
-    </nav>
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('dashboard')">
+                📊 Dashboard
+            </button>
+            <button class="tab-button" onclick="showTab('charts')">
+                📈 Graphiques
+            </button>
+            <button class="tab-button" onclick="showTab('export')">
+                💾 Export
+            </button>
+        </div>
 
-    <h2>Données en temps réel</h2>
-    <div id="donnees"></div>
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>
+                        <span class="status-indicator"></span>
+                        Données en Temps Réel
+                    </h3>
+                    <div id="donnees" class="sensor-data">
+                        <div class="no-data">Chargement des données...</div>
+                    </div>
+                </div>
 
-    <h2>Alertes</h2>
-    <div id="alertes"></div>
+                <div class="card">
+                    <h3>🚨 Alertes Actives</h3>
+                    <div id="alertes">
+                        <div class="no-data">Vérification des alertes...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Tab -->
+        <div id="charts" class="tab-content">
+            <div class="charts-section">
+                <div class="chart-controls">
+                    <h3>📈 Analyse Historique</h3>
+                    <div class="select-wrapper">
+                        <select id="captureSelect">
+                            <option value="">-- Choisir une capture --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <div class="chart-title">🌡️ Température (°C)</div>
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">💧 Humidité (%)</div>
+                        <canvas id="humidChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="export" class="tab-content">
+            <div class="export-section">
+                <div class="export-card">
+                    <h3>📥 Télécharger les Données</h3>
+                    <p>Exportez vos données de surveillance dans le format de votre choix</p>
+                    
+                    <div class="select-wrapper">
+                        <select id="formatSelect">
+                            <option value="csv">Format CSV</option>
+                            <option value="excel">Format Excel</option>
+                        </select>
+                    </div>
+                    
+                    <button class="download-btn" id="downloadBtn">
+                        💾 Télécharger
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        async function chargerdonnee() {
-            const eventSource = new EventSource('/api/donnees/stream');
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Real-time Data Management
+        let eventSource;
+
+        function initializeRealTimeData() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            eventSource = new EventSource('/api/donnees/stream');
 
             eventSource.onmessage = function(event) {
                 try {
                     const donnees = JSON.parse(event.data);
-                    document.getElementById('donnees').innerHTML = donnees.map(d =>
-                        `<p>Capteur ${d.capteurId || 'N/A'}: ${d.temperature}°C, ${d.humidite}%</p>`
-                    ).join("");
+                    updateSensorDisplay(donnees);
                 } catch (e) {
                     console.error('Erreur lors du traitement des données SSE:', e);
                 }
@@ -42,40 +503,259 @@
 
             eventSource.onerror = function(err) {
                 console.error('Erreur de connexion SSE:', err);
-                eventSource.close();
+                document.getElementById('donnees').innerHTML = 
+                    '<div class="no-data">❌ Erreur de connexion</div>';
             };
         }
 
-        async function chargerAlertes() {
+        function updateSensorDisplay(donnees) {
+            const container = document.getElementById('donnees');
+            if (!donnees || donnees.length === 0) {
+                container.innerHTML = '<div class="no-data">Aucune donnée disponible</div>';
+                return;
+            }
+
+            container.innerHTML = donnees.map(d => `
+                <div class="sensor-item">
+                    <div class="sensor-label">Capteur ${d.capteurId || 'N/A'}</div>
+                    <div class="sensor-values">
+                        <div class="value">
+                            <div class="value-number">${d.temperature}°</div>
+                            <div class="value-label">Température</div>
+                        </div>
+                        <div class="value">
+                            <div class="value-number">${d.humidite}%</div>
+                            <div class="value-label">Humidité</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Alerts Management
+        async function loadAlerts() {
             try {
-                const resAlertes = await fetch('/api/alertes');
-                if (!resAlertes.ok) {
-                    console.error('Erreur API /api/alertes :', await resAlertes.text());
-                    document.getElementById('alertes').innerHTML = '<p>Erreur lors du chargement des alertes.</p>';
-                    return;
+                const response = await fetch('/api/alertes');
+                if (!response.ok) {
+                    throw new Error('Erreur API alertes');
                 }
-                const alertes = await resAlertes.json();
-                if (!Array.isArray(alertes)) {
-                    console.error('Alertes reçues ne sont pas un tableau:', alertes);
-                    document.getElementById('alertes').innerHTML = '<p>Alertes invalides reçues.</p>';
-                    return;
-                }
-                document.getElementById('alertes').innerHTML = alertes.map(a =>
-                    `<p class="alerte">⚠️ Capteur ${a.capteurId || 'N/A'}: ${a.temperature}°C</p>`
-                ).join("");
+                const alertes = await response.json();
+                updateAlertsDisplay(alertes);
             } catch (error) {
                 console.error('Erreur lors du chargement des alertes:', error);
-                document.getElementById('alertes').innerHTML = '<p>Erreur lors du chargement des alertes.</p>';
+                document.getElementById('alertes').innerHTML = 
+                    '<div class="no-data">❌ Erreur de chargement des alertes</div>';
             }
         }
 
-        setInterval(chargerAlertes, 2000);
-        setInterval(chargerdonnee, 2000);
-        chargerdonnee();
-        chargerAlertes();
-        // Remove repeated EventSource creation by calling chargerdonnee only once
+        function updateAlertsDisplay(alertes) {
+            const container = document.getElementById('alertes');
+            if (!alertes || alertes.length === 0) {
+                container.innerHTML = '<div class="no-data">✅ Aucune alerte active</div>';
+                return;
+            }
 
+            container.innerHTML = alertes.map(a => `
+                <div class="alert-item">
+                    <div class="alert-icon">⚠️</div>
+                    <div class="alert-text">
+                        Capteur ${a.capteurId || 'N/A'}: ${a.temperature}°C
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Charts Management
+        let tempChart, humidChart;
+
+        function initializeCharts() {
+            const tempCtx = document.getElementById('tempChart').getContext('2d');
+            const humidCtx = document.getElementById('humidChart').getContext('2d');
+
+            tempChart = new Chart(tempCtx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Température (°C)',
+                        data: [],
+                        borderColor: '#ff6b6b',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            type: 'time', 
+                            time: { unit: 'minute' },
+                            grid: { color: 'rgba(0,0,0,0.1)' }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.1)' }
+                        }
+                    }
+                }
+            });
+
+            humidChart = new Chart(humidCtx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Humidité (%)',
+                        data: [],
+                        borderColor: '#4ecdc4',
+                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            type: 'time', 
+                            time: { unit: 'minute' },
+                            grid: { color: 'rgba(0,0,0,0.1)' }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadCaptures() {
+            try {
+                const response = await fetch('/api/captures');
+                const captures = await response.json();
+                const select = document.getElementById('captureSelect');
+                
+                captures.forEach(capture => {
+                    const option = document.createElement('option');
+                    option.value = capture;
+                    option.textContent = capture;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erreur lors du chargement des captures:', error);
+            }
+        }
+
+        async function updateChartsData(captureName) {
+            if (!captureName) {
+                tempChart.data.datasets[0].data = [];
+                humidChart.data.datasets[0].data = [];
+                tempChart.update();
+                humidChart.update();
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/mesures/${encodeURIComponent(captureName)}`);
+                const mesures = await response.json();
+
+                const chartData = mesures.map(m => {
+                    const [y, mo, d, h, mi, s] = m.insertionTime;
+                    return {
+                        x: new Date(y, mo - 1, d, h, mi, s),
+                        temp: m.temperature,
+                        humid: m.humidite
+                    };
+                });
+
+                tempChart.data.datasets[0].data = chartData.map(d => ({x: d.x, y: d.temp}));
+                humidChart.data.datasets[0].data = chartData.map(d => ({x: d.x, y: d.humid}));
+                
+                tempChart.update();
+                humidChart.update();
+            } catch (error) {
+                console.error('Erreur lors du chargement des données de graphique:', error);
+            }
+        }
+
+        // Export Management
+        function initializeExport() {
+            document.getElementById('downloadBtn').addEventListener('click', function() {
+                const format = document.getElementById('formatSelect').value;
+                const url = `/api/export?format=${format}`;
+                
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text) });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = format === 'csv' ? 'mesures.csv' : 'mesures.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(downloadUrl);
+                })
+                .catch(error => {
+                    alert('Erreur lors du téléchargement: ' + error.message);
+                });
+            });
+        }
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize real-time data
+            initializeRealTimeData();
+            
+            // Initialize charts
+            initializeCharts();
+            loadCaptures();
+            
+            // Initialize export functionality
+            initializeExport();
+            
+            // Set up periodic updates
+            setInterval(loadAlerts, 2000);
+            
+            // Set up chart update listener
+            document.getElementById('captureSelect').addEventListener('change', function() {
+                updateChartsData(this.value);
+            });
+            
+            // Load initial alerts
+            loadAlerts();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (eventSource) {
+                eventSource.close();
+            }
+        });
     </script>
 </body>
-
 </html>
