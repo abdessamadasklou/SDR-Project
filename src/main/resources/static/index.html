@@ -303,6 +303,122 @@
             color: #333;
         }
 
+        .config-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .config-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .config-card h3 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .config-card p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .config-form {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.05rem;
+        }
+
+        .form-group input {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(39, 174, 96, 0.3);
+        }
+
+        .save-btn:active {
+            transform: translateY(0);
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .message.show {
+            opacity: 1;
+            transform: translateY(-5px);
+        }
+
+        .message.success {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         .download-btn {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
@@ -382,14 +498,17 @@
         </div>
 
         <div class="tabs">
-            <button class="tab-button active" onclick="showTab('dashboard')">
+            <button class="tab-button active" onclick="showTab('dashboard', this)">
                 📊 Dashboard
             </button>
-            <button class="tab-button" onclick="showTab('charts')">
+            <button class="tab-button" onclick="showTab('charts', this)">
                 📈 Graphiques
             </button>
-            <button class="tab-button" onclick="showTab('export')">
+            <button class="tab-button" onclick="showTab('export', this)">
                 💾 Export
+            </button>
+            <button class="tab-button" onclick="showTab('config', this)">
+                ⚙️ Configuration
             </button>
         </div>
 
@@ -460,11 +579,47 @@
                 </div>
             </div>
         </div>
+
+        <!-- Configuration Tab -->
+        <div id="config" class="tab-content">
+            <div class="config-section">
+                <div class="config-card">
+                    <h3>⚙️ Configuration du Système</h3>
+                    <p>Configurez les seuils d'alerte et les paramètres de notification</p>
+                    
+                    <form id="configForm" class="config-form">
+                        <div class="form-group">
+                            <label for="minTemp">🌡️ Seuil Minimum de Température (°C)</label>
+                            <input type="number" step="0.1" id="minTemp" name="minTemp" required 
+                                   placeholder="Ex: 15.0" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxTemp">🌡️ Seuil Maximum de Température (°C)</label>
+                            <input type="number" step="0.1" id="maxTemp" name="maxTemp" required 
+                                   placeholder="Ex: 25.0" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="alertEmail">📧 Adresse Email pour les Alertes</label>
+                            <input type="email" id="alertEmail" name="alertEmail" required 
+                                   placeholder="exemple@email.com" />
+                        </div>
+
+                        <button type="submit" class="save-btn">
+                            💾 Sauvegarder la Configuration
+                        </button>
+                    </form>
+                    
+                    <div class="message" id="configMessage"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         // Tab Management
-        function showTab(tabName) {
+        function showTab(tabName, buttonElement) {
             // Hide all tab contents
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
@@ -476,10 +631,18 @@
             });
             
             // Show selected tab content
-            document.getElementById(tabName).classList.add('active');
+            const tabContent = document.getElementById(tabName);
+            if (tabContent) {
+                tabContent.classList.add('active');
+            } else {
+                console.error(`Tab content with id '${tabName}' not found`);
+                return;
+            }
             
             // Add active class to clicked button
-            event.target.classList.add('active');
+            if (buttonElement) {
+                buttonElement.classList.add('active');
+            }
         }
 
         // Real-time Data Management
@@ -692,6 +855,75 @@
             }
         }
 
+        // Configuration Management
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/api/config');
+                if (!response.ok) throw new Error('Échec du chargement de la configuration');
+                
+                const config = await response.json();
+                document.getElementById('minTemp').value = config.minTemperatureThreshold || '';
+                document.getElementById('maxTemp').value = config.maxTemperatureThreshold || '';
+                document.getElementById('alertEmail').value = config.alertEmail || '';
+            } catch (error) {
+                showConfigMessage('Erreur lors du chargement de la configuration: ' + error.message, 'error');
+            }
+        }
+
+        async function saveConfiguration(event) {
+            event.preventDefault();
+            
+            const minTemp = parseFloat(document.getElementById('minTemp').value);
+            const maxTemp = parseFloat(document.getElementById('maxTemp').value);
+            const alertEmail = document.getElementById('alertEmail').value.trim();
+
+            // Validation
+            if (minTemp >= maxTemp) {
+                showConfigMessage('Le seuil minimum doit être inférieur au seuil maximum', 'error');
+                return;
+            }
+
+            const config = {
+                minTemperatureThreshold: minTemp,
+                maxTemperatureThreshold: maxTemp,
+                alertEmail: alertEmail
+            };
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                
+                const message = await response.text();
+                
+                if (response.ok) {
+                    showConfigMessage('Configuration sauvegardée avec succès!', 'success');
+                } else {
+                    showConfigMessage('Erreur: ' + message, 'error');
+                }
+            } catch (error) {
+                showConfigMessage('Échec de la sauvegarde de la configuration', 'error');
+            }
+        }
+
+        function showConfigMessage(text, type) {
+            const messageDiv = document.getElementById('configMessage');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type} show`;
+            
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        function initializeConfiguration() {
+            document.getElementById('configForm').addEventListener('submit', saveConfiguration);
+            loadConfiguration();
+        }
+
         // Export Management
         function initializeExport() {
             document.getElementById('downloadBtn').addEventListener('click', function() {
@@ -737,6 +969,9 @@
             
             // Initialize export functionality
             initializeExport();
+            
+            // Initialize configuration functionality
+            initializeConfiguration();
             
             // Set up periodic updates
             setInterval(loadAlerts, 2000);

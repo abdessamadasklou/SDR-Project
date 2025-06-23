@@ -1,0 +1,31 @@
+@startuml
+title Architecture du système de surveillance de température et humidité
+
+package "Capteurs (Clients)" {
+  [Capteur] as SensorClient
+}
+
+package "Serveur Central" {
+  [RmiServiceClient] as RmiClient
+  [DonneesController (API REST)] as RestAPI
+  [ExportService] as ExportService
+  [EmailService] as EmailService
+  [tempServer] as TempServer
+  database "Base de données\nMesures" as Database
+}
+
+SensorClient --> RmiClient : Envoi mesures via RMI
+RmiClient --> TempServer : Transfert mesures
+TempServer --> Database : Stockage mesures
+RestAPI --> Database : Requêtes données
+RestAPI --> ExportService : Export données CSV/Excel
+RestAPI --> EmailService : Envoi alertes
+RestAPI --> Utilisateur : Fournit API REST
+
+package "Interface Utilisateur" {
+  [Application Web] as WebUI
+}
+
+WebUI --> RestAPI : Consommation API REST (données, alertes, export)
+
+@enduml

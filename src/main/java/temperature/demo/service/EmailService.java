@@ -8,16 +8,23 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import temperature.demo.service.ConfigurationService;
+
 @Service
 public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;
 
+    @Autowired
+    private ConfigurationService configurationService;
+
     private final String fromEmail = "norn71716@gmail.com"; // Replace with your sender email
-    private final String toEmail = "dds3157f@gmail.com"; // Replace with recipient email
 
     public void sendAlertEmail(String capteurName, double temperature, double humidity) throws MessagingException {
+        String toEmail = configurationService.getAlertEmail();
+
         String subject = "Alert: Sensor " + capteurName + " triggered an alert";
         String htmlMsg = "<html><body>" +
                 "<h2 style='color:red;'>Sensor Alert</h2>" +

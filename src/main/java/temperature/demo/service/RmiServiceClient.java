@@ -12,6 +12,7 @@ import temperature.demo.model.Mesure;
 import temperature.demo.remote.TemperatureService;
 import temperature.demo.repository.MesureRepository;
 import temperature.demo.service.EmailService;
+import temperature.demo.service.ConfigurationService;
 
 @Service
 public class RmiServiceClient extends UnicastRemoteObject implements TemperatureService {
@@ -24,6 +25,9 @@ public class RmiServiceClient extends UnicastRemoteObject implements Temperature
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private ConfigurationService configurationService;
+
     public RmiServiceClient() throws RemoteException {
         super();
     }
@@ -34,7 +38,10 @@ public class RmiServiceClient extends UnicastRemoteObject implements Temperature
         mesureRepository.save(m);
         System.out.println("Nouvelle mesure reçue : " + m.getTemperature() + "°C / " + m.getHumidite() + "%");
 
-        if (m.getTemperature() < 10 || m.getTemperature() > 30) {
+        double minThreshold = configurationService.getMinTemperatureThreshold();
+        double maxThreshold = configurationService.getMaxTemperatureThreshold();
+
+        if (m.getTemperature() < minThreshold || m.getTemperature() > maxThreshold) {
             try {
                 emailService.sendAlertEmail(m.getCapteurName(), m.getTemperature(), m.getHumidite());
                 System.out.println("Alert email sent for sensor: " + m.getCapteurName());
@@ -49,8 +56,11 @@ public class RmiServiceClient extends UnicastRemoteObject implements Temperature
     }
 
     public List<Mesure> getAlertes() throws RemoteException {
+        double minThreshold = configurationService.getMinTemperatureThreshold();
+        double maxThreshold = configurationService.getMaxTemperatureThreshold();
+
         return getDernieresMesures().stream()
-            .filter(m -> m.getTemperature() < 10 || m.getTemperature() > 30)
+            .filter(m -> m.getTemperature() < minThreshold || m.getTemperature() > maxThreshold)
             .toList();
     }
 }

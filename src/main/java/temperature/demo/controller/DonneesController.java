@@ -34,6 +34,9 @@ public class DonneesController {
     @Autowired
     private temperature.demo.service.ExportService exportService;
 
+    @Autowired
+    private temperature.demo.service.ConfigurationService configurationService;
+
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @GetMapping("/donnees")
@@ -146,5 +149,37 @@ public class DonneesController {
     @GetMapping("/mesures/{captureName}")
     public List<Mesure> getMesuresByCapture(@PathVariable String captureName) {
         return mesureRepository.findByCapteurNameOrderByInsertionTimeAsc(captureName);
+    }
+
+    // New endpoints for configuration
+
+    @GetMapping("/config")
+    public Map<String, Object> getConfig() {
+        Map<String, Object> config = new HashMap<>();
+        config.put("minTemperatureThreshold", configurationService.getMinTemperatureThreshold());
+        config.put("maxTemperatureThreshold", configurationService.getMaxTemperatureThreshold());
+        config.put("alertEmail", configurationService.getAlertEmail());
+        return config;
+    }
+
+    @PostMapping("/config")
+    public ResponseEntity<String> updateConfig(@RequestBody Map<String, Object> config) {
+        try {
+            if (config.containsKey("minTemperatureThreshold")) {
+                double minThreshold = Double.parseDouble(config.get("minTemperatureThreshold").toString());
+                configurationService.setMinTemperatureThreshold(minThreshold);
+            }
+            if (config.containsKey("maxTemperatureThreshold")) {
+                double maxThreshold = Double.parseDouble(config.get("maxTemperatureThreshold").toString());
+                configurationService.setMaxTemperatureThreshold(maxThreshold);
+            }
+            if (config.containsKey("alertEmail")) {
+                String alertEmail = config.get("alertEmail").toString();
+                configurationService.setAlertEmail(alertEmail);
+            }
+            return ResponseEntity.ok("Configuration updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid configuration data: " + e.getMessage());
+        }
     }
 }
